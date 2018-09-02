@@ -57,9 +57,6 @@
           </div>
         </div>
 
-      <br v-if="!goodRes">
-      <p v-if="goodRes">{{subStatus}}</p>
-
     <b-table striped hover dark table-bordered :items="response"
              :fields="result_fields[msg]" :per-page="perPage" :current-page="currentPage">
         <template slot="actions" slot-scope="row">
@@ -93,12 +90,10 @@
             return {
                 msg: 'People',
                 create: false,
-                goodRes: false,
                 response: [],
                 errors: [],
                 menuops: ["Resources", "People", "Projects"],
                 searchfield: '',
-                subStatus: "",
                 currentPage: 1,
                 perPage: 7,
                 editConfirm: -1,
@@ -178,99 +173,53 @@
                 const search = this.searchfield;
                 axios.get(`/api/${this.map[this.msg]}/findBy?name=${search}`)
                     .then(response => this.response = response.data)
-                    .catch(e => this.errors.push(e));
+                    .catch(e => {});
             },
             deleteById(item, index) {
-                this.goodRes = true;
-                this.subStatus = "Deleting";
-                axios({
-                    method: 'delete',
-                    url: `/api/${this.map[this.msg]}/delete?id=${item.id}`,
-                    timeout: 5000
-                    })
-                    .then(response => {
-                        this.subStatus = `Deleted item id ${item.id}`;
-                        this.response.splice(index, 1);
-                    })
-                    .catch(e => {
-                        this.errors.push(e);
-                        this.subStatus = "Error";
-                    });
+                axios.delete(`/api/${this.map[this.msg]}/delete?id=${item.id}`)
+                    .then(response => this.response.splice(index, 1))
+                    .catch(e => {});
             },
             createItem() {
                 const formData = new FormData();
                 Object.keys(this.form[this.msg]).forEach(key => formData.append(key,
                     this.form[this.msg][key]));
                 this.create = false;
-                this.goodRes = true;
-                this.subStatus = "Submitting";
                 axios({
                     method: 'post',
                     url: `/api/${this.map[this.msg]}/save${this.map[this.msg]}`,
                     data: formData,
-                    timeout: 5000
                 }
-                ).then(response => {
-                    if(this.msg !== "People") {
-                        this.subStatus = `${response.data.name} created, id is ${response.data.id}`;
-                        this.response.unshift(response.data);
-                    } else {
-                        this.subStatus = `${response.data.firstName} ${response.data.lastName} created,
-                        account number is ${response.data.accountNumber}`;
-                        this.response.unshift(response.data);
-                    }
-                }).catch(e => {
-                    this.errors.push(e);
-                    this.subStatus = "Error";
-                });
+                ).then(response => this.response.unshift(response.data))
+                 .catch(e => {});
             },
             updateItem() {
                 const formData = new FormData();
                 Object.keys(this.form[this.msg]).forEach(key => formData.append(key,
                     this.form[this.msg][key]));
                 formData.append('id', this.response[this.editConfirm].id);
-                this.goodRes = true;
-                this.subStatus = "Submitting";
                 axios({
                         method: 'post',
                         url: `/api/${this.map[this.msg]}/update${this.map[this.msg]}`,
                         data: formData,
-                        timeout: 5000
                     }
                 ).then(response => {
-                    if(this.msg !== "People") {
-                        this.subStatus = `id ${response.data.id} updated`;
-                        Object.keys(this.response[this.editConfirm]).forEach(k =>
+                    Object.keys(this.response[this.editConfirm]).forEach(k =>
                             this.response[this.editConfirm][k] = response.data[k]);
-                    } else {
-                        this.subStatus = `Account ${response.data.accountNumber} updated`;
-                        Object.keys(this.response[this.editConfirm]).forEach(k =>
-                            this.response[this.editConfirm][k] = response.data[k]);
-                    }
                     this.editConfirm = -1;
-                }).catch(e => {
-                    this.errors.push(e);
-                    this.subStatus = "Error";
-                    this.editConfirm = -1;
-                });
+                }).catch(e => this.editConfirm = -1);
             },
             allocateResource() {
                 const formData = new FormData();
                 formData.append("resId", this.response[this.editConfirm].id);
                 if(this.resourceOwner !== '') formData.append("accNo", this.resourceOwner);
                 else formData.append("accNo", '-1');
-                this.goodRes = true;
-                this.subStatus = "Submitting";
                 axios({
                     method: 'post',
                     url: '/api/resource/assignresource',
                     data: formData,
-                    timeout: 5000
                 }).then(response => {
                     if(this.resourceOwner === '') {
-                        this.subStatus = `Resource ${this.response[this.editConfirm].name} removed from
-                            ${this.response[this.editConfirm].owner.firstName}
-                            ${this.response[this.editConfirm].owner.lastName}`;
                         this.response[this.editConfirm].owner = null;
                     } else {
                         this.response[this.editConfirm].owner = {
@@ -279,16 +228,9 @@
                             "accountNumber": response.data.owner.accountNumber,
                             "firstName": response.data.owner.firstName
                         };
-                        this.subStatus = `Resource ${this.response[this.editConfirm].name} allocated to
-                            ${this.response[this.editConfirm].owner.firstName}
-                            ${this.response[this.editConfirm].owner.lastName}`;
                     }
                     this.resourceOwner = '';
-                }).catch(e => {
-                    this.errors.push(e);
-                    this.subStatus = "Error";
-                    this.resourceOwner = '';
-                })
+                }).catch(e => this.resourceOwner = '')
 
             },
             changeWorkers(change) {
@@ -296,31 +238,20 @@
                 formData.append("id", this.response[this.editConfirm].id);
                 formData.append("accNo", this.resourceOwner);
                 formData.append("assign", change);
-                this.goodRes = true;
-                this.subStatus = "Submitting";
                 axios({
                     method: 'post',
                     url: '/api/project/changeworker',
                     data: formData,
-                    timeout: 5000
                 }).then(response => {
                     this.response[this.editConfirm].workers = response.data.workers;
                     this.response[this.editConfirm].resource = response.data;
-                    this.subStatus = `Account ${this.resourceOwner}
-                    ${change ? 'added to ' : 'removed from '} ${this.response[this.editConfirm].name}`;
                     this.resourceOwner = '';
-                }).catch(e => {
-                    this.errors.push(e);
-                    this.subStatus = "Error";
-                    this.resourceOwner = '';
-                })
+                }).catch(e => this.resourceOwner = '');
             },
             handleChange(op) {
                 if(this.msg !== op) {
                     this.response = [];
                     this.searchfield = "";
-                    this.subStatus = "";
-                    this.goodRes = false;
                     this.create = false;
                     this.deleteConfirm = -1;
                     this.editConfirm = -1;
@@ -345,9 +276,7 @@
                 this.setDetails(row)
             },
             logout() {
-                firebase.auth().signOut().then(() => {
-                    this.$router.replace('login')
-                })
+                firebase.auth().signOut().then(() => this.$router.replace('login'));
             }
         }
     }
