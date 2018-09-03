@@ -8,7 +8,7 @@
     </ul>
 
       <b-input-group class="row justify-content-md-center">
-          <b-input-group-append >
+          <b-input-group-append>
 
               <b-form-input class="col-10" v-bind:placeholder="'Search for ' + msg.toLowerCase()"
                             title="" v-model="searchfield"></b-form-input>
@@ -66,7 +66,8 @@
                 {{editConfirm === row.index ? "Cancel" : "Edit"}}
             </b-button>
             <b-button v-if="editConfirm !== row.index" variant="danger"
-                    @click="deleteConfirm = (deleteConfirm === row.index) ? -1 : row.index">
+                    @click="deleteConfirm = (deleteConfirm === row.index) ? -1 : row.index;
+                             editConfirm = -1">
                 {{deleteConfirm === row.index ? "Cancel" : "Delete"}}
             </b-button>
             <b-button v-if="deleteConfirm === row.index" variant="success"
@@ -256,8 +257,9 @@
             },
             handleEdit(row) {
                 this.editConfirm = (this.editConfirm === row) ? -1 : row;
+                this.deleteConfirm = -1;
                 this.create = false;
-                this.setDetails(row)
+                this.setDetails(row);
             },
             logout() {
                 firebase.auth().signOut().then(() => this.$router.replace('login'));
