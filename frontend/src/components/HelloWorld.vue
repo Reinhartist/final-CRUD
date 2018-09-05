@@ -161,7 +161,7 @@
                             formatter: (value, key, item) => {
                                 if (item.workers === null) return "";
                                 return item.workers.map(worker => worker.resources.map(resource =>
-                                    resource.name).join(", ")).join(", ")
+                                    resource.name).join(", ")).join("; ")
                             }
                         },
                         {key: "active", sortable: true},
@@ -214,8 +214,7 @@
                 formData.append('id', this.response[this.editConfirm].id);
                 axios.post(`/api/${this.map[this.msg]}/update${this.map[this.msg]}`, formData)
                     .then(response => {
-                        Object.keys(this.response[this.editConfirm]).forEach(k =>
-                            this.response[this.editConfirm][k] = response.data[k]);
+                        this.response.splice(this.editConfirm, 1, response.data);
                         this.editConfirm = -1;
                     }).catch(e => this.editConfirm = -1);
             },
@@ -227,14 +226,7 @@
                 axios.post('/api/resource/assignresource', formData)
                     .then(response => {
                         if (this.resourceOwner === '') this.response[this.editConfirm].owner = null;
-                        else {
-                            this.response[this.editConfirm].owner = {
-                                "id": response.data.owner.id,
-                                "lastName": response.data.owner.lastName,
-                                "accountNumber": response.data.owner.accountNumber,
-                                "firstName": response.data.owner.firstName
-                            };
-                        }
+                        else this.response.splice(this.editConfirm, 1, response.data);
                         this.resourceOwner = '';
                     }).catch(e => this.resourceOwner = '')
 
@@ -246,8 +238,7 @@
                 formData.append("assign", change);
                 axios.post('/api/project/changeworker', formData)
                     .then(response => {
-                        this.response[this.editConfirm].workers = response.data.workers;
-                        this.response[this.editConfirm].resource = response.data;
+                        this.response.splice(this.editConfirm, 1, response.data);
                         this.resourceOwner = '';
                     }).catch(e => this.resourceOwner = '');
             },
